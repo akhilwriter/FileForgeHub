@@ -22,25 +22,25 @@ export async function processFiles(
   try {
     const formData = new FormData();
 
-    // Add PDF files
+    // Add PDF files - API expects field name 'pdf'
     pdfFiles.forEach(file => {
-      formData.append('pdfFiles', file.buffer, {
+      formData.append('pdf', file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype
       });
     });
 
-    // Add EML files
+    // Add EML files - API expects field name 'eml'
     emlFiles.forEach(file => {
-      formData.append('emlFiles', file.buffer, {
+      formData.append('eml', file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype
       });
     });
 
-    // Add XLSX file if present
+    // Add XLSX file if present - API expects field name 'xlsx'
     if (xlsxFile) {
-      formData.append('xlsxFile', xlsxFile.buffer, {
+      formData.append('xlsx', xlsxFile.buffer, {
         filename: xlsxFile.originalname,
         contentType: xlsxFile.mimetype
       });
@@ -85,7 +85,8 @@ export async function processFiles(
         status: error.response?.status,
         statusText: error.response?.statusText,
         message: error.message,
-        url: error.config?.url
+        url: error.config?.url,
+        responseData: error.response?.data
       });
       
       // Handle specific error cases
