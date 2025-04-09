@@ -63,7 +63,7 @@ export async function processFiles(
     
     console.log(`Sending request to Flask API: ${flaskApiUrl}`);
     
-    const response = await axios.post<ProcessResponse>(
+    const response = await axios.post(
       flaskApiUrl,
       formData,
       {
@@ -71,7 +71,7 @@ export async function processFiles(
           ...formData.getHeaders(),
           // No API key needed for this API
         },
-        responseType: 'json',
+        responseType: 'arraybuffer', // Change to binary response type
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
         // Allow self-signed certificates for development
@@ -84,20 +84,62 @@ export async function processFiles(
     console.log("Flask API response received:", {
       status: response.status,
       statusText: response.statusText,
-      responseData: response.data
+      contentType: response.headers['content-type'],
+      contentLength: response.headers['content-length'],
+      isArrayBuffer: response.data instanceof ArrayBuffer
     });
 
-    // Ensure the response matches our expected schema
-    const processResponse: ProcessResponse = {
-      success: response.data.success || false,
-      downloadUrl: response.data.downloadUrl,
-      message: response.data.message,
-      error: response.data.error
-    };
+    // Check if the response is a successful binary response (like CSV data)
+    if (
+      response.status === 200 && 
+      response.data instanceof ArrayBuffer && 
+      (
+        response.headers['content-type']?.includes('text/csv') ||
+        response.headers['content-type']?.includes('application/octet-stream')
+      )
+    ) {
+      // Convert the binary data to base64 to pass it to the client
+      const buffer = Buffer.from(response.data);
+      const base64Data = buffer.toString('base64');
+
+      // Return success with the binary data
+      const processResponse: ProcessResponse = {
+        success: true,
+        binaryData: base64Data,
+        contentType: response.headers['content-type'] || 'text/csv',
+        fileName: 'processed_data.csv'
+      };
+      
+      return processResponse;
+    }
     
-    console.log("Processed response:", processResponse);
-    
-    return processResponse;
+    // Try to parse as JSON if it's not binary data
+    try {
+      const textData = Buffer.from(response.data).toString('utf-8');
+      const jsonData = JSON.parse(textData);
+      
+      console.log("API returned JSON:", jsonData);
+      
+      // Return error response
+      const processResponse: ProcessResponse = {
+        success: jsonData.success || false,
+        message: jsonData.message,
+        error: jsonData.error
+      };
+      
+      return processResponse;
+    } catch (e) {
+      console.log("Response is neither valid binary data nor JSON");
+      
+      // If we get here, we couldn't parse as JSON or recognize as binary
+      const errorResponse: ProcessResponse = {
+        success: false,
+        error: "Received unexpected response format from the API"
+      };
+      
+      console.log("Processed response:", errorResponse);
+      return errorResponse;
+    }
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("API Error:", {
@@ -105,24 +147,47 @@ export async function processFiles(
         statusText: error.response?.statusText,
         message: error.message,
         url: error.config?.url,
-        responseData: error.response?.data
+        responseData: error.response?.data instanceof Buffer ? 'Binary data' : error.response?.data
       });
       
       // Handle specific error cases
       const apiUrl = getFlaskApiUrl();
+      let errorMessage = "Error processing files";
+      
       if (error.code === 'ECONNREFUSED') {
-        throw new Error(`Unable to connect to the API server at ${apiUrl}. Please ensure the server is running.`);
+        errorMessage = `Unable to connect to the API server at ${apiUrl}. Please ensure the server is running.`;
       } else if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
-        throw new Error(`SSL certificate issue when connecting to the API. This might be due to a self-signed certificate.`);
-      } else {
-        throw new Error(
-          error.response?.data?.message ||
-          error.message ||
-          "Error processing files"
-        );
+        errorMessage = `SSL certificate issue when connecting to the API. This might be due to a self-signed certificate.`;
+      } else if (error.response?.data) {
+        try {
+          if (error.response.data instanceof Buffer) {
+            const textData = error.response.data.toString('utf-8');
+            try {
+              const jsonData = JSON.parse(textData);
+              errorMessage = jsonData.message || jsonData.error || "API error: " + error.message;
+            } catch (e) {
+              // Not valid JSON
+              errorMessage = textData.slice(0, 100) || "API error: " + error.message;
+            }
+          } else {
+            errorMessage = error.response.data.message || error.response.data.error || error.message;
+          }
+        } catch (e) {
+          errorMessage = error.message;
+        }
       }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
+    
     console.error("Unknown error during API request:", error);
-    throw error;
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred"
+    };
   }
 }

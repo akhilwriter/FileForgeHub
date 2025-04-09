@@ -85,12 +85,45 @@ export function ProcessingSection({
         description: "Files processed successfully",
       });
       
-      if (data.downloadUrl) {
+      if (data.binaryData) {
+        console.log("Binary data received, creating download...");
+        
+        setTimeout(() => {
+          try {
+            // Convert base64 to blob
+            const byteCharacters = atob(data.binaryData as string);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: data.contentType || 'text/csv' });
+            
+            // Create download
+            const url = window.URL.createObjectURL(blob);
+            const fileName = data.fileName || "processed_data.csv";
+            createDownloadFromUrl(url, fileName);
+            console.log("Download started from binary data");
+            
+            // Clean up
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url);
+            }, 1000);
+          } catch (err) {
+            console.error("Binary download error:", err);
+            toast({
+              title: "Download Error",
+              description: "Could not create download from the received data.",
+              variant: "destructive",
+            });
+          }
+        }, 500);
+      } else if (data.downloadUrl) {
         console.log("Download URL received:", data.downloadUrl);
         setTimeout(() => {
           try {
             createDownloadFromUrl(data.downloadUrl as string, "processed_data.csv");
-            console.log("Download started");
+            console.log("Download started from URL");
           } catch (err) {
             console.error("Download error:", err);
             toast({
@@ -101,10 +134,10 @@ export function ProcessingSection({
           }
         }, 500);
       } else {
-        console.warn("No download URL in API response:", data);
+        console.warn("No download data in API response:", data);
         toast({
           title: "Note",
-          description: "Processing complete, but no download URL was provided.",
+          description: "Processing complete, but no download data was provided.",
         });
       }
     },
@@ -134,11 +167,44 @@ export function ProcessingSection({
   };
 
   const downloadResult = () => {
-    if (processFiles.data?.downloadUrl) {
+    const data = processFiles.data;
+    
+    if (data?.binaryData) {
       try {
-        console.log("Manual download requested for URL:", processFiles.data.downloadUrl);
-        createDownloadFromUrl(processFiles.data.downloadUrl as string, "processed_data.csv");
-        console.log("Manual download started");
+        console.log("Manual binary download requested");
+        
+        // Convert base64 to blob
+        const byteCharacters = atob(data.binaryData as string);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: data.contentType || 'text/csv' });
+        
+        // Create download
+        const url = window.URL.createObjectURL(blob);
+        const fileName = data.fileName || "processed_data.csv";
+        createDownloadFromUrl(url, fileName);
+        console.log("Manual download started from binary data");
+        
+        // Clean up
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      } catch (err) {
+        console.error("Manual binary download error:", err);
+        toast({
+          title: "Download Error",
+          description: "Could not create download from the received data.",
+          variant: "destructive",
+        });
+      }
+    } else if (data?.downloadUrl) {
+      try {
+        console.log("Manual download requested for URL:", data.downloadUrl);
+        createDownloadFromUrl(data.downloadUrl as string, "processed_data.csv");
+        console.log("Manual download started from URL");
       } catch (err) {
         console.error("Manual download error:", err);
         toast({
@@ -150,7 +216,7 @@ export function ProcessingSection({
     } else {
       toast({
         title: "No Download Available",
-        description: "There is no download URL available from the API response.",
+        description: "There is no downloadable content available from the API response.",
         variant: "destructive",
       });
     }

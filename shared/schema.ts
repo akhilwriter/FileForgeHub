@@ -35,6 +35,9 @@ export const fileProcessingSchema = z.object({
 export const processResponseSchema = z.object({
   success: z.boolean(),
   downloadUrl: z.string().optional(),
+  binaryData: z.string().optional(), // Base64 encoded binary data
+  contentType: z.string().optional(), // Content type of the binary data
+  fileName: z.string().optional(),    // Suggested filename for download
   message: z.string().optional(),
   error: z.string().optional(),
 });
