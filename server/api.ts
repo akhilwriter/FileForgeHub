@@ -20,10 +20,17 @@ export async function processFiles(
   xlsxFile?: MulterFile
 ): Promise<ProcessResponse> {
   try {
+    console.log("API processFiles called with:", {
+      pdfCount: pdfFiles.length,
+      emlCount: emlFiles.length,
+      hasXlsx: !!xlsxFile
+    });
+    
     const formData = new FormData();
 
     // Add PDF files - API expects field name 'pdf'
     pdfFiles.forEach(file => {
+      console.log(`Adding PDF file to formData: ${file.originalname}`);
       formData.append('pdf', file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype
@@ -32,6 +39,7 @@ export async function processFiles(
 
     // Add EML files - API expects field name 'eml'
     emlFiles.forEach(file => {
+      console.log(`Adding EML file to formData: ${file.originalname}`);
       formData.append('eml', file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype
@@ -40,6 +48,7 @@ export async function processFiles(
 
     // Add XLSX file if present - API expects field name 'xlsx'
     if (xlsxFile) {
+      console.log(`Adding XLSX file to formData: ${xlsxFile.originalname}`);
       formData.append('xlsx', xlsxFile.buffer, {
         filename: xlsxFile.originalname,
         contentType: xlsxFile.mimetype
@@ -51,6 +60,8 @@ export async function processFiles(
     if (!flaskApiUrl) {
       throw new Error("Flask API URL is not configured. Please set the FLASK_API_URL environment variable.");
     }
+    
+    console.log(`Sending request to Flask API: ${flaskApiUrl}`);
     
     const response = await axios.post<ProcessResponse>(
       flaskApiUrl,
@@ -70,6 +81,12 @@ export async function processFiles(
       }
     );
 
+    console.log("Flask API response received:", {
+      status: response.status,
+      statusText: response.statusText,
+      responseData: response.data
+    });
+
     // Ensure the response matches our expected schema
     const processResponse: ProcessResponse = {
       success: response.data.success || false,
@@ -77,6 +94,8 @@ export async function processFiles(
       message: response.data.message,
       error: response.data.error
     };
+    
+    console.log("Processed response:", processResponse);
     
     return processResponse;
   } catch (error) {

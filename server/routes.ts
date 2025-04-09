@@ -22,6 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ]),
     async (req: Request, res: Response) => {
       try {
+        console.log("Processing files request received", {
+          filesReceived: req.files,
+          bodyKeys: Object.keys(req.body || {}),
+        });
+        
         const files = req.files as {
           pdfFiles?: Express.Multer.File[];
           emlFiles?: Express.Multer.File[];

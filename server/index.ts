@@ -6,6 +6,14 @@ import dotenv from "dotenv";
 // Load environment variables from .env file
 dotenv.config();
 
+// Validate required environment variables
+if (!process.env.FLASK_API_URL) {
+  console.error("Error: FLASK_API_URL environment variable is not set.");
+  console.error("Please create or update the .env file with the FLASK_API_URL variable.");
+  console.error("Example: FLASK_API_URL=https://your-flask-api-url/process-files/");
+  process.exit(1); // Exit with error code
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

@@ -35,16 +35,19 @@ export function ProcessingSection({
       // Append PDF files
       pdfFiles.forEach((file, index) => {
         formData.append(`pdfFiles`, file);
+        console.log(`Appended PDF file: ${file.name}`);
       });
       
       // Append EML files
       emlFiles.forEach((file, index) => {
         formData.append(`emlFiles`, file);
+        console.log(`Appended EML file: ${file.name}`);
       });
       
       // Append XLSX file
       if (xlsxFile) {
         formData.append('xlsxFile', xlsxFile);
+        console.log(`Appended XLSX file: ${xlsxFile.name}`);
       }
       
       const response = await fetch('/api/process-files', {
@@ -83,9 +86,26 @@ export function ProcessingSection({
       });
       
       if (data.downloadUrl) {
+        console.log("Download URL received:", data.downloadUrl);
         setTimeout(() => {
-          createDownloadFromUrl(data.downloadUrl, "processed_data.csv");
+          try {
+            createDownloadFromUrl(data.downloadUrl as string, "processed_data.csv");
+            console.log("Download started");
+          } catch (err) {
+            console.error("Download error:", err);
+            toast({
+              title: "Download Error",
+              description: "Could not download the result file. Please try the download button again.",
+              variant: "destructive",
+            });
+          }
         }, 500);
+      } else {
+        console.warn("No download URL in API response:", data);
+        toast({
+          title: "Note",
+          description: "Processing complete, but no download URL was provided.",
+        });
       }
     },
     onError: (error, _, interval) => {
@@ -115,7 +135,24 @@ export function ProcessingSection({
 
   const downloadResult = () => {
     if (processFiles.data?.downloadUrl) {
-      createDownloadFromUrl(processFiles.data.downloadUrl, "processed_data.csv");
+      try {
+        console.log("Manual download requested for URL:", processFiles.data.downloadUrl);
+        createDownloadFromUrl(processFiles.data.downloadUrl as string, "processed_data.csv");
+        console.log("Manual download started");
+      } catch (err) {
+        console.error("Manual download error:", err);
+        toast({
+          title: "Download Error",
+          description: "Could not download the result file. The URL might be invalid or inaccessible.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "No Download Available",
+        description: "There is no download URL available from the API response.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,7 +195,7 @@ export function ProcessingSection({
             </div>
             <span className="text-sm text-primary">{Math.round(progress)}%</span>
           </div>
-          <Progress value={progress} className="h-2 bg-blue-100" indicatorClassName="bg-primary" />
+          <Progress value={progress} className="h-2 bg-blue-100" />
         </Alert>
       )}
       
