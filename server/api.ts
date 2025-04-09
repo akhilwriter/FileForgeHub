@@ -89,25 +89,54 @@ export async function processFiles(
       isArrayBuffer: response.data instanceof ArrayBuffer
     });
 
-    // Check if the response is a successful binary response (like CSV data)
+    console.log("Checking response type:", {
+      contentType: response.headers['content-type'],
+      dataType: typeof response.data,
+      isBuffer: response.data instanceof Buffer,
+      isArrayBuffer: response.data instanceof ArrayBuffer
+    });
+    
+    // Check if the response is a successful binary response in any common format
     if (
       response.status === 200 && 
-      response.data instanceof ArrayBuffer && 
+      (response.data instanceof ArrayBuffer || response.data instanceof Buffer) && 
       (
+        // Support various common file formats the API might return
         response.headers['content-type']?.includes('text/csv') ||
-        response.headers['content-type']?.includes('application/octet-stream')
+        response.headers['content-type']?.includes('application/octet-stream') ||
+        response.headers['content-type']?.includes('application/vnd.openxmlformats') ||
+        response.headers['content-type']?.includes('application/vnd.ms-excel') ||
+        response.headers['content-type']?.includes('application/pdf') ||
+        response.headers['content-type']?.includes('application/') ||
+        response.headers['content-type']?.includes('text/')
       )
     ) {
       // Convert the binary data to base64 to pass it to the client
       const buffer = Buffer.from(response.data);
       const base64Data = buffer.toString('base64');
 
+      // Determine appropriate file extension based on content-type
+      let fileName = 'processed_data.csv';
+      const contentType = response.headers['content-type'] || 'text/csv';
+      
+      if (contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+        fileName = 'processed_data.xlsx';
+      } else if (contentType.includes('application/vnd.ms-excel')) {
+        fileName = 'processed_data.xls';
+      } else if (contentType.includes('application/pdf')) {
+        fileName = 'processed_data.pdf';
+      } else if (contentType.includes('text/plain')) {
+        fileName = 'processed_data.txt';
+      }
+      
+      console.log(`Using file extension based on content type: ${fileName}`);
+      
       // Return success with the binary data
       const processResponse: ProcessResponse = {
         success: true,
         binaryData: base64Data,
-        contentType: response.headers['content-type'] || 'text/csv',
-        fileName: 'processed_data.csv'
+        contentType: contentType,
+        fileName: fileName
       };
       
       return processResponse;

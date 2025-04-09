@@ -80,9 +80,16 @@ export function ProcessingSection({
       clearInterval(interval);
       setProgress(100);
       
+      // Determine file type for success message
+      let fileType = "CSV";
+      if (data.fileName?.endsWith('.xlsx')) fileType = "Excel";
+      else if (data.fileName?.endsWith('.xls')) fileType = "Excel";
+      else if (data.fileName?.endsWith('.pdf')) fileType = "PDF";
+      else if (data.fileName?.endsWith('.txt')) fileType = "text";
+      
       toast({
         title: "Success",
-        description: "Files processed successfully",
+        description: `Files processed successfully. A ${fileType} file is ready for download.`,
       });
       
       if (data.binaryData) {
@@ -278,7 +285,7 @@ export function ProcessingSection({
               size="sm"
               className="h-8 bg-[#4CAF50] hover:bg-[#43a047]"
             >
-              Download CSV
+              Download {processFiles.data?.fileName?.split('.').pop()?.toUpperCase() || 'File'}
             </Button>
           </div>
         </Alert>
