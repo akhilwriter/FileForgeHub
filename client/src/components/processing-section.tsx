@@ -276,16 +276,21 @@ export function ProcessingSection({
       {processFiles.isSuccess && (
         <Alert className="mb-4 bg-green-50 border-green-200">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-[#4CAF50] mr-2" />
-              <AlertTitle>Processing complete!</AlertTitle>
+            <div className="flex items-start flex-col">
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 text-[#4CAF50] mr-2" />
+                <AlertTitle>Processing complete!</AlertTitle>
+              </div>
+              <AlertDescription className="text-green-700 mt-1 ml-6">
+                The updated {processFiles.data?.fileName?.split('.').pop() || 'file'} has been downloaded.
+              </AlertDescription>
             </div>
             <Button 
               onClick={downloadResult}
               size="sm"
               className="h-8 bg-[#4CAF50] hover:bg-[#43a047]"
             >
-              Download {processFiles.data?.fileName?.split('.').pop()?.toUpperCase() || 'File'}
+              Download File Again
             </Button>
           </div>
         </Alert>

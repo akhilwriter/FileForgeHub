@@ -18,8 +18,8 @@ export default function Home() {
     <div className="container mx-auto max-w-5xl px-4 py-8">
       {/* Header Section */}
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold mb-2">File Processor</h1>
-        <p className="text-gray-600">Upload your files to process and generate a CSV report</p>
+        <h1 className="text-3xl font-semibold mb-2">Collection Reconciliation</h1>
+        <p className="text-gray-600">Upload your PDF, EML, and XLSX files to reconcile your collections</p>
       </header>
 
       {/* Main Content Area */}
