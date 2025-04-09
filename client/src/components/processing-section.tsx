@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileSummary } from "@/components/file-summary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -172,6 +172,15 @@ export function ProcessingSection({
     
     processFiles.mutate();
   };
+  
+  const resetApp = () => {
+    onClearAll();
+    processFiles.reset();
+    toast({
+      title: "Application Reset",
+      description: "The application has been reset for new files",
+    });
+  };
 
   const downloadResult = () => {
     const data = processFiles.data;
@@ -285,13 +294,24 @@ export function ProcessingSection({
                 The updated {processFiles.data?.fileName?.split('.').pop() || 'file'} has been downloaded.
               </AlertDescription>
             </div>
-            <Button 
-              onClick={downloadResult}
-              size="sm"
-              className="h-8 bg-[#4CAF50] hover:bg-[#43a047]"
-            >
-              Download File Again
-            </Button>
+            <div className="flex flex-col space-y-2">
+              <Button 
+                onClick={downloadResult}
+                size="sm"
+                className="h-8 bg-[#4CAF50] hover:bg-[#43a047]"
+              >
+                Download File Again
+              </Button>
+              <Button
+                onClick={resetApp}
+                size="sm"
+                className="h-8"
+                variant="outline"
+              >
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Reset App
+              </Button>
+            </div>
           </div>
         </Alert>
       )}
@@ -299,14 +319,25 @@ export function ProcessingSection({
       {/* Error Status */}
       {processFiles.isError && (
         <Alert className="mb-4 bg-red-50 border-red-200" variant="destructive">
-          <div className="flex items-start">
-            <XCircle className="h-4 w-4 text-[#F44336] mr-2 mt-0.5" />
-            <div>
-              <AlertTitle>Processing failed</AlertTitle>
-              <AlertDescription className="text-red-700 mt-1">
-                {processFiles.error?.message || "There was an error processing your files. Please try again."}
-              </AlertDescription>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start">
+              <XCircle className="h-4 w-4 text-[#F44336] mr-2 mt-0.5" />
+              <div>
+                <AlertTitle>Processing failed</AlertTitle>
+                <AlertDescription className="text-red-700 mt-1">
+                  {processFiles.error?.message || "There was an error processing your files. Please try again."}
+                </AlertDescription>
+              </div>
             </div>
+            <Button
+              onClick={resetApp}
+              size="sm"
+              className="h-8 mt-1"
+              variant="outline"
+            >
+              <RefreshCw className="mr-1 h-3 w-3" />
+              Reset
+            </Button>
           </div>
         </Alert>
       )}
